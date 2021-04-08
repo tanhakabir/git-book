@@ -15,12 +15,6 @@ interface RawNotebookCell {
   value: string;
   kind: vscode.NotebookCellKind;
   editable?: boolean;
-  outputs: RawCellOutput[];
-}
-
-interface RawCellOutput {
-  mime: string;
-  value: any;
 }
 
 export class ContentSerializer implements vscode.NotebookSerializer {
@@ -47,7 +41,7 @@ export class ContentSerializer implements vscode.NotebookSerializer {
       item.kind,
       item.value,
       item.language,
-      item.outputs ? [new vscode.NotebookCellOutput(item.outputs.map(raw => new vscode.NotebookCellOutputItem(raw.mime, raw.value)))] : [],
+      [], // don't save outputs
       new vscode.NotebookCellMetadata().with({ editable: item.editable ?? true })
     ));
 
@@ -61,16 +55,6 @@ export class ContentSerializer implements vscode.NotebookSerializer {
    * @inheritdoc
    */
    public async notebookToData(data: vscode.NotebookData): Promise<Uint8Array> {
-    function asRawOutput(cell: vscode.NotebookCellData): RawCellOutput[] {
-      let result: RawCellOutput[] = [];
-      for (let output of cell.outputs ?? []) {
-        for (let item of output.outputs) {
-          result.push({ mime: item.mime, value: item.value });
-        }
-      }
-      return result;
-    }
-
     let contents: RawNotebookData = { cells: []};
 
     for (const cell of data.cells) {
@@ -78,8 +62,7 @@ export class ContentSerializer implements vscode.NotebookSerializer {
         kind: cell.kind,
         language: cell.language,
         value: cell.source,
-        editable: cell.metadata?.editable,
-        outputs: asRawOutput(cell)
+        editable: cell.metadata?.editable
       });
     }
 
